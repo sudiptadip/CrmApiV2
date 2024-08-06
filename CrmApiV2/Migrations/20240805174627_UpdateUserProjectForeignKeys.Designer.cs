@@ -12,8 +12,8 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace CrmApiV2.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20240804130414_AddPhoneNumberToApplicationUser3")]
-    partial class AddPhoneNumberToApplicationUser3
+    [Migration("20240805174627_UpdateUserProjectForeignKeys")]
+    partial class UpdateUserProjectForeignKeys
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -161,6 +161,83 @@ namespace CrmApiV2.Migrations
                     b.ToTable("Companies");
                 });
 
+            modelBuilder.Entity("CrmApiV2.Models.Project", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("ClientName")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("CompanyId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("CreatedBy")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime>("CreatedOn")
+                        .HasColumnType("datetime2");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("ModifiedBy")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime?>("ModifiedOn")
+                        .HasColumnType("datetime2");
+
+                    b.Property<double>("MonthlyPrice")
+                        .HasColumnType("float");
+
+                    b.Property<string>("ProjectName")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime>("StartDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("WebsiteUrl")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CompanyId");
+
+                    b.ToTable("Projects");
+                });
+
+            modelBuilder.Entity("CrmApiV2.Models.UserProject", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("ProjectId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("UserId")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(450)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ProjectId");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("UserProjects");
+                });
+
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRole", b =>
                 {
                     b.Property<string>("Id")
@@ -190,43 +267,43 @@ namespace CrmApiV2.Migrations
                     b.HasData(
                         new
                         {
-                            Id = "5d419dfb-fa73-446e-ae20-11c94d0912d4",
+                            Id = "395e9f0d-e5c1-4654-a284-947731db68ce",
                             Name = "Super Admin",
                             NormalizedName = "SUPER_ADMIN"
                         },
                         new
                         {
-                            Id = "779c03b7-b49f-44c9-8a32-4f3f84ace6db",
+                            Id = "7b6432e3-93c4-43b6-80c3-51a11c133907",
                             Name = "Admin",
                             NormalizedName = "ADMIN"
                         },
                         new
                         {
-                            Id = "b2aade6b-50aa-4086-9d60-accd09faccd5",
+                            Id = "d9e0a392-b942-48c1-8fde-cedc9a438d67",
                             Name = "Seo",
                             NormalizedName = "SEO"
                         },
                         new
                         {
-                            Id = "53fc232b-19f8-4e5f-9d63-eddaf045cb0e",
+                            Id = "6b637e82-1c2e-4c66-a24b-256483a33a87",
                             Name = "Developer",
                             NormalizedName = "DEVELOPER"
                         },
                         new
                         {
-                            Id = "bd8daf67-6bbd-422d-ac86-42f10a8aa9d1",
+                            Id = "247a5d47-b9df-4ffd-968b-3bacf501bd54",
                             Name = "Sales",
                             NormalizedName = "SALES"
                         },
                         new
                         {
-                            Id = "eec4b03f-f304-4021-9ff5-56108547a65e",
+                            Id = "50255a06-a579-4890-80cb-6c2e4091e41d",
                             Name = "Content Writer",
                             NormalizedName = "CONTENT_WRITER"
                         },
                         new
                         {
-                            Id = "b0b1fa74-5542-4844-aa7e-2ec46ee7b722",
+                            Id = "ec3cf849-5d83-4c74-902e-4c004a5a38a9",
                             Name = "Academic Writer",
                             NormalizedName = "ACADEMIC_WRITER"
                         });
@@ -349,6 +426,36 @@ namespace CrmApiV2.Migrations
                     b.Navigation("Company");
                 });
 
+            modelBuilder.Entity("CrmApiV2.Models.Project", b =>
+                {
+                    b.HasOne("CrmApiV2.Models.Company", "Company")
+                        .WithMany()
+                        .HasForeignKey("CompanyId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Company");
+                });
+
+            modelBuilder.Entity("CrmApiV2.Models.UserProject", b =>
+                {
+                    b.HasOne("CrmApiV2.Models.Project", "Project")
+                        .WithMany("UserProjects")
+                        .HasForeignKey("ProjectId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("CrmApiV2.Models.ApplicationUser", "User")
+                        .WithMany("UserProjects")
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Project");
+
+                    b.Navigation("User");
+                });
+
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRoleClaim<string>", b =>
                 {
                     b.HasOne("Microsoft.AspNetCore.Identity.IdentityRole", null)
@@ -398,6 +505,16 @@ namespace CrmApiV2.Migrations
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+                });
+
+            modelBuilder.Entity("CrmApiV2.Models.ApplicationUser", b =>
+                {
+                    b.Navigation("UserProjects");
+                });
+
+            modelBuilder.Entity("CrmApiV2.Models.Project", b =>
+                {
+                    b.Navigation("UserProjects");
                 });
 #pragma warning restore 612, 618
         }

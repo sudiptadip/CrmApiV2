@@ -76,6 +76,8 @@ builder.Services.AddControllers().AddNewtonsoftJson(o => { o.SerializerSettings.
 builder.Services.AddDbContext<ApplicationDbContext>(optiopns => optiopns.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnectionString")));
 builder.Services.AddScoped<ITokenService, TokenService>();
 builder.Services.AddScoped<ICompanyRepository, CompanyRepository>();
+builder.Services.AddScoped<ICurrentUserService, CurrentUserService>();
+builder.Services.AddScoped<IProjectRepository, ProjectRepository>();
 
 
 

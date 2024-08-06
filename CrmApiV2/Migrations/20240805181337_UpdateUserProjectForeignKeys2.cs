@@ -7,7 +7,7 @@
 namespace CrmApiV2.Migrations
 {
     /// <inheritdoc />
-    public partial class AddPhoneNumberToApplicationUser3 : Migration
+    public partial class UpdateUserProjectForeignKeys2 : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
@@ -15,41 +15,41 @@ namespace CrmApiV2.Migrations
             migrationBuilder.DeleteData(
                 table: "AspNetRoles",
                 keyColumn: "Id",
-                keyValue: "0817d8e8-fec7-4139-a4c5-97d049c7f3ad");
+                keyValue: "247a5d47-b9df-4ffd-968b-3bacf501bd54");
 
             migrationBuilder.DeleteData(
                 table: "AspNetRoles",
                 keyColumn: "Id",
-                keyValue: "5cb744ef-e086-4a58-9670-8648e85af768");
+                keyValue: "395e9f0d-e5c1-4654-a284-947731db68ce");
 
             migrationBuilder.DeleteData(
                 table: "AspNetRoles",
                 keyColumn: "Id",
-                keyValue: "9562bf99-3ca2-4e87-a198-264eccbc9ddb");
+                keyValue: "50255a06-a579-4890-80cb-6c2e4091e41d");
 
             migrationBuilder.DeleteData(
                 table: "AspNetRoles",
                 keyColumn: "Id",
-                keyValue: "be1ae4e8-473b-4bd1-8f07-d5f162d6aaa7");
+                keyValue: "6b637e82-1c2e-4c66-a24b-256483a33a87");
 
             migrationBuilder.DeleteData(
                 table: "AspNetRoles",
                 keyColumn: "Id",
-                keyValue: "c9a78277-a64e-4738-8cd0-41eddfaa0114");
+                keyValue: "7b6432e3-93c4-43b6-80c3-51a11c133907");
 
             migrationBuilder.DeleteData(
                 table: "AspNetRoles",
                 keyColumn: "Id",
-                keyValue: "dbfd9ab3-dcf6-4f32-9c00-fc0e29a33791");
+                keyValue: "d9e0a392-b942-48c1-8fde-cedc9a438d67");
 
             migrationBuilder.DeleteData(
                 table: "AspNetRoles",
                 keyColumn: "Id",
-                keyValue: "fff03597-25d1-48cd-824c-5f2acf2b30b0");
+                keyValue: "ec3cf849-5d83-4c74-902e-4c004a5a38a9");
 
             migrationBuilder.AlterColumn<string>(
-                name: "CreatedBy",
-                table: "AspNetUsers",
+                name: "ModifiedBy",
+                table: "Projects",
                 type: "nvarchar(max)",
                 nullable: true,
                 oldClrType: typeof(string),
@@ -60,13 +60,13 @@ namespace CrmApiV2.Migrations
                 columns: new[] { "Id", "ConcurrencyStamp", "Name", "NormalizedName" },
                 values: new object[,]
                 {
-                    { "53fc232b-19f8-4e5f-9d63-eddaf045cb0e", null, "Developer", "DEVELOPER" },
-                    { "5d419dfb-fa73-446e-ae20-11c94d0912d4", null, "Super Admin", "SUPER_ADMIN" },
-                    { "779c03b7-b49f-44c9-8a32-4f3f84ace6db", null, "Admin", "ADMIN" },
-                    { "b0b1fa74-5542-4844-aa7e-2ec46ee7b722", null, "Academic Writer", "ACADEMIC_WRITER" },
-                    { "b2aade6b-50aa-4086-9d60-accd09faccd5", null, "Seo", "SEO" },
-                    { "bd8daf67-6bbd-422d-ac86-42f10a8aa9d1", null, "Sales", "SALES" },
-                    { "eec4b03f-f304-4021-9ff5-56108547a65e", null, "Content Writer", "CONTENT_WRITER" }
+                    { "219c4dcb-50f6-4726-ad5b-5d1a10a284dc", null, "Content Writer", "CONTENT_WRITER" },
+                    { "36541b86-463e-4303-bf7f-90769e0a44ad", null, "Sales", "SALES" },
+                    { "4299aef3-b3fe-49c5-8086-e4bb744dd70d", null, "Super Admin", "SUPER_ADMIN" },
+                    { "760bd4a2-1d42-43f3-9fa7-4817732eb5a5", null, "Developer", "DEVELOPER" },
+                    { "a72e34dc-384d-4ae7-a6ff-7f6a39b8abaf", null, "Academic Writer", "ACADEMIC_WRITER" },
+                    { "ab73bb66-f34a-428e-b773-bf5c116362e7", null, "Admin", "ADMIN" },
+                    { "f36998d1-25ba-4e2c-a26a-a13208428d7b", null, "Seo", "SEO" }
                 });
         }
 
@@ -76,41 +76,41 @@ namespace CrmApiV2.Migrations
             migrationBuilder.DeleteData(
                 table: "AspNetRoles",
                 keyColumn: "Id",
-                keyValue: "53fc232b-19f8-4e5f-9d63-eddaf045cb0e");
+                keyValue: "219c4dcb-50f6-4726-ad5b-5d1a10a284dc");
 
             migrationBuilder.DeleteData(
                 table: "AspNetRoles",
                 keyColumn: "Id",
-                keyValue: "5d419dfb-fa73-446e-ae20-11c94d0912d4");
+                keyValue: "36541b86-463e-4303-bf7f-90769e0a44ad");
 
             migrationBuilder.DeleteData(
                 table: "AspNetRoles",
                 keyColumn: "Id",
-                keyValue: "779c03b7-b49f-44c9-8a32-4f3f84ace6db");
+                keyValue: "4299aef3-b3fe-49c5-8086-e4bb744dd70d");
 
             migrationBuilder.DeleteData(
                 table: "AspNetRoles",
                 keyColumn: "Id",
-                keyValue: "b0b1fa74-5542-4844-aa7e-2ec46ee7b722");
+                keyValue: "760bd4a2-1d42-43f3-9fa7-4817732eb5a5");
 
             migrationBuilder.DeleteData(
                 table: "AspNetRoles",
                 keyColumn: "Id",
-                keyValue: "b2aade6b-50aa-4086-9d60-accd09faccd5");
+                keyValue: "a72e34dc-384d-4ae7-a6ff-7f6a39b8abaf");
 
             migrationBuilder.DeleteData(
                 table: "AspNetRoles",
                 keyColumn: "Id",
-                keyValue: "bd8daf67-6bbd-422d-ac86-42f10a8aa9d1");
+                keyValue: "ab73bb66-f34a-428e-b773-bf5c116362e7");
 
             migrationBuilder.DeleteData(
                 table: "AspNetRoles",
                 keyColumn: "Id",
-                keyValue: "eec4b03f-f304-4021-9ff5-56108547a65e");
+                keyValue: "f36998d1-25ba-4e2c-a26a-a13208428d7b");
 
             migrationBuilder.AlterColumn<string>(
-                name: "CreatedBy",
-                table: "AspNetUsers",
+                name: "ModifiedBy",
+                table: "Projects",
                 type: "nvarchar(max)",
                 nullable: false,
                 defaultValue: "",
@@ -123,13 +123,13 @@ namespace CrmApiV2.Migrations
                 columns: new[] { "Id", "ConcurrencyStamp", "Name", "NormalizedName" },
                 values: new object[,]
                 {
-                    { "0817d8e8-fec7-4139-a4c5-97d049c7f3ad", null, "Super Admin", "SUPER_ADMIN" },
-                    { "5cb744ef-e086-4a58-9670-8648e85af768", null, "Seo", "SEO" },
-                    { "9562bf99-3ca2-4e87-a198-264eccbc9ddb", null, "Sales", "SALES" },
-                    { "be1ae4e8-473b-4bd1-8f07-d5f162d6aaa7", null, "Content Writer", "CONTENT_WRITER" },
-                    { "c9a78277-a64e-4738-8cd0-41eddfaa0114", null, "Admin", "ADMIN" },
-                    { "dbfd9ab3-dcf6-4f32-9c00-fc0e29a33791", null, "Developer", "DEVELOPER" },
-                    { "fff03597-25d1-48cd-824c-5f2acf2b30b0", null, "Academic Writer", "ACADEMIC_WRITER" }
+                    { "247a5d47-b9df-4ffd-968b-3bacf501bd54", null, "Sales", "SALES" },
+                    { "395e9f0d-e5c1-4654-a284-947731db68ce", null, "Super Admin", "SUPER_ADMIN" },
+                    { "50255a06-a579-4890-80cb-6c2e4091e41d", null, "Content Writer", "CONTENT_WRITER" },
+                    { "6b637e82-1c2e-4c66-a24b-256483a33a87", null, "Developer", "DEVELOPER" },
+                    { "7b6432e3-93c4-43b6-80c3-51a11c133907", null, "Admin", "ADMIN" },
+                    { "d9e0a392-b942-48c1-8fde-cedc9a438d67", null, "Seo", "SEO" },
+                    { "ec3cf849-5d83-4c74-902e-4c004a5a38a9", null, "Academic Writer", "ACADEMIC_WRITER" }
                 });
         }
     }

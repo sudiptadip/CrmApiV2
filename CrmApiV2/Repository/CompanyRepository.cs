@@ -37,7 +37,7 @@ namespace CrmApiV2.Repository
                 return null;
             }
 
-            var userExists = await _db.applicationUsers.AnyAsync(u => u.CompanyId == id && !u.IsDeleted);
+            var userExists = await _db.ApplicationUsers.AnyAsync(u => u.CompanyId == id && !u.IsDeleted);
             if (userExists)
             {
                 throw new InvalidOperationException("Cannot delete company with associated users.");

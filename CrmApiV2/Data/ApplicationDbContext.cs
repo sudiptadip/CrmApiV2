@@ -2,22 +2,36 @@
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
+using System.Collections.Generic;
 
 namespace CrmApiV2.Data
 {
     public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
     {
-        public ApplicationDbContext(DbContextOptions options) : base(options)
+        public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options) : base(options)
         {
         }
 
-        public DbSet<ApplicationUser> applicationUsers { get; set; }
+        public DbSet<ApplicationUser> ApplicationUsers { get; set; }
         public DbSet<Company> Companies { get; set; }
-
+        public DbSet<Project> Projects { get; set; }
+        public DbSet<UserProject> UserProjects { get; set; }
 
         protected override void OnModelCreating(ModelBuilder builder)
         {
             base.OnModelCreating(builder);
+
+            builder.Entity<UserProject>()
+                .HasOne(up => up.User)
+                .WithMany(u => u.UserProjects)
+                .HasForeignKey(up => up.UserId)
+                .OnDelete(DeleteBehavior.Restrict); // Prevents cascade delete
+
+            builder.Entity<UserProject>()
+                .HasOne(up => up.Project)
+                .WithMany(p => p.UserProjects)
+                .HasForeignKey(up => up.ProjectId)
+                .OnDelete(DeleteBehavior.Restrict); // Prevents cascade delete
 
             List<IdentityRole> roles = new List<IdentityRole> {
                 new IdentityRole {
@@ -50,8 +64,6 @@ namespace CrmApiV2.Data
                 },
             };
             builder.Entity<IdentityRole>().HasData(roles);
-
         }
-
     }
 }
