@@ -33,7 +33,6 @@ namespace CrmApiV2.Controllers
             _db = db;
         }
 
-
         [HttpPost("register")]
         public async Task<ActionResult> Register([FromBody] RegisterDto registerDto)
         {
@@ -410,7 +409,6 @@ namespace CrmApiV2.Controllers
             });
         }
 
-
         [HttpPost("startBreakTime/{userId}")]
         [Authorize]
         public async Task<IActionResult> StartBreakTime([FromRoute] string userId)
@@ -478,8 +476,7 @@ namespace CrmApiV2.Controllers
                   );
         }
 
-
-        [HttpPost("endBreakTime/{userId : string}")]
+        [HttpPost("endBreakTime/{userId}")]
         [Authorize]
         public async Task<IActionResult> EndBreakTime([FromRoute] string userId)
         {
