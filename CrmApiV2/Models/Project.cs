@@ -24,6 +24,8 @@ namespace CrmApiV2.Models
 
         public double MonthlyPrice { get; set; }
 
+        public bool IsComplete { get; set; } = false;
+
         public int CompanyId { get; set; }
 
         [ForeignKey("CompanyId")]

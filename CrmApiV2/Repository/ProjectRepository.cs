@@ -40,6 +40,7 @@ namespace CrmApiV2.Repository
                 StartDate = project.StartDate,
                 MonthlyPrice = project.MonthlyPrice,
                 CompanyId = user.CompanyId,
+                IsComplete = false,
                 IsDeleted = false,
                 CreatedBy = user.Id,
                 CreatedOn = DateTime.Now
