@@ -10,5 +10,6 @@
         public string Address { get; set; }
         public DateTime CreatedOn { get; set; }
         public int CompanyId { get; set; }
+        public List<string> Roles { get; set; }
     }
 }

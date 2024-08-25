@@ -8,6 +8,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using System.Data;
 using System.Security.Claims;
 
 namespace CrmApiV2.Controllers
@@ -36,21 +37,15 @@ namespace CrmApiV2.Controllers
             {
                 if (!ModelState.IsValid)
                 {
-                    var errors = ModelState.Values.SelectMany(v => v.Errors)
-                                              .Select(e => new ErrorDetailDto
-                                              {
-                                                  Field = "",
-                                                  Message = e.ErrorMessage
-                                              })
-                                              .ToList();
+                    var errorMessage = string.Join("; ", ModelState.Values
+                                               .SelectMany(v => v.Errors)
+                                               .Select(e => e.ErrorMessage));
 
                     return BadRequest(new ErrorResponseDto
                     {
                         Status = "error",
-                        Message = "Validation failed.",
-                        Errors = errors
+                        Message = $"Validation failed: {errorMessage}",
                     });
-
                 }
 
                 var appUser = new ApplicationUser
@@ -74,13 +69,15 @@ namespace CrmApiV2.Controllers
                         return Ok(
                             new ApiResponseDto<SignupResponseDataDto>
                             {
-                                Status = "Success",
-                                Message = "Account Created Successfully",
+                                Status = "success",
+                                Message = "Account created successfully.",
                                 Data = new SignupResponseDataDto
                                 {
+                                    Name = appUser.Name,
+                                    Username = appUser.UserName,
                                     UserId = appUser.Id,
                                     Email = appUser.Email,
-                                    Username = appUser.UserName,
+                                    Mobile = appUser.PhoneNumber,
                                     Token = _tokenService.CreateToken(appUser)
                                 }
                             }
@@ -91,91 +88,83 @@ namespace CrmApiV2.Controllers
                         return StatusCode(500, new ErrorResponseDto
                         {
                             Status = "error",
-                            Message = "An unexpected error occurred. Please try again later.",
-                            Errors = new List<ErrorDetailDto>
-                    {
-                        new ErrorDetailDto
-                        {
-                            Field = "internal",
-                            Message = createUser.Errors.ToString() // In production, avoid exposing internal messages.
-                        }
-                    }
+                            Message = "Failed to assign the role to the user. Please try again later.",
                         });
                     }
                 }
                 else
                 {
-                    return StatusCode(500, new ErrorResponseDto
+                    var errorMessage = string.Join("; ", createUser.Errors.Select(e => e.Description));
+                    return BadRequest(new ErrorResponseDto
                     {
                         Status = "error",
-                        Message = "An unexpected error occurred. Please try again later.",
-                        Errors = new List<ErrorDetailDto>
-                    {
-                        new ErrorDetailDto
-                        {
-                            Field = "internal",
-                            Message = createUser.Errors.ToString() // In production, avoid exposing internal messages.
-                        }
-                    }
+                        Message = $"Failed to create the user: {errorMessage}",
                     });
                 }
             }
             catch (Exception ex)
             {
-
                 return StatusCode(500, new ErrorResponseDto
                 {
                     Status = "error",
-                    Message = "An unexpected error occurred. Please try again later.",
-                    Errors = new List<ErrorDetailDto>
-                    {
-                        new ErrorDetailDto
-                        {
-                            Field = "internal",
-                            Message = ex.Message
-                        }
-                    }
+                    Message = $"An internal server error occurred: {ex.Message}",
                 });
             }
         }
-
-
 
         [HttpPost("login")]
         public async Task<ActionResult> Login(LoginDto loginDto)
         {
             if (!ModelState.IsValid)
             {
-                return BadRequest();
+                var errorMessage = string.Join("; ", ModelState.Values
+                                           .SelectMany(v => v.Errors)
+                                           .Select(e => e.ErrorMessage));
+
+                return BadRequest(new ErrorResponseDto
+                {
+                    Status = "error",
+                    Message = $"Validation failed: {errorMessage}",
+                });
             }
 
             var user = await _userManager.Users.FirstOrDefaultAsync(x => x.UserName == loginDto.Email);
             if (user == null)
             {
-                return Unauthorized("Invalid Username!");
+                return Unauthorized(new ErrorResponseDto
+                {
+                    Status = "error",
+                    Message = "Invalid username or email."
+                });
             }
 
             var result = await _signInManager.CheckPasswordSignInAsync(user, loginDto.Password, false);
             if (!result.Succeeded)
             {
-                Unauthorized("Username not found");
+                return Unauthorized(new ErrorResponseDto
+                {
+                    Status = "error",
+                    Message = "Incorrect password. Please try again."
+                });
             }
+
             return Ok(
                 new ApiResponseDto<SignupResponseDataDto>
                 {
-                    Status = "Success",
-                    Message = "Account Created Successfully",
+                    Status = "success",
+                    Message = "Login successful.",
                     Data = new SignupResponseDataDto
                     {
+                        Name = user.Name,
                         UserId = user.Id,
                         Email = user.Email,
+                        Mobile = user.PhoneNumber,
                         Username = user.UserName,
                         Token = _tokenService.CreateToken(user)
                     }
                 }
             );
         }
-
 
         [HttpGet("roles")]
         public async Task<ActionResult> GetAllRoles()
@@ -193,6 +182,62 @@ namespace CrmApiV2.Controllers
         [Authorize]
         public async Task<ActionResult> GetAllUsers()
         {
+            var loggedInUserId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+
+            var loggedInUser = await _userManager.FindByIdAsync(loggedInUserId);
+            if (loggedInUser == null)
+            {
+                return NotFound(new ErrorResponseDto
+                {
+                    Status = "error",
+                    Message = "Logged-in user not found",
+                });
+            }
+
+            var users = await _userManager.Users
+                                          .Where(user => user.CompanyId == loggedInUser.CompanyId)
+                                          .ToListAsync();
+
+            if (!users.Any())
+            {
+                return NotFound(new ErrorResponseDto
+                {
+                    Status = "error",
+                    Message = "No users found in your company.",
+                });
+            }
+
+            var usersWithRoles = new List<UserDto>();
+
+            foreach (var user in users)
+            {
+                var roles = await _userManager.GetRolesAsync(user);
+                usersWithRoles.Add(new UserDto
+                {
+                    Id = user.Id,
+                    Email = user.Email,
+                    Name = user.Name,
+                    PhoneNumber = user.PhoneNumber,
+                    Address =user.Address,
+                    UserName = user.UserName,
+                    CompanyId = user.CompanyId,
+                    Roles = roles.ToList()
+                });
+            }
+
+            return Ok(new ApiResponseDto<List<UserDto>>
+            {
+                Status = "success",
+                Message = "Users retrieved successfully",
+                Data = usersWithRoles
+            });
+        }
+
+
+        [HttpGet("usersByRole/{role}")]
+        [Authorize]
+        public async Task<ActionResult> GetAllUsersByRole([FromRoute] string role)
+        {
 
             var loggedInUserId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
 
@@ -203,20 +248,31 @@ namespace CrmApiV2.Controllers
                 {
                     Status = "error",
                     Message = "Logged-in user not found",
-                    Errors = new List<ErrorDetailDto>
-            {
-                new ErrorDetailDto
-                {
-                    Field = "userId",
-                    Message = "Logged-in user does not exist"
-                }
-            }
                 });
             }
 
-            var users = await _userManager.Users
-                                          .Where(user => user.CompanyId == loggedInUser.CompanyId)
-                                          .Select(user => user.ToUserDto()).ToListAsync();
+            var usersInRole = await _userManager.GetUsersInRoleAsync(role);
+            if (usersInRole == null || !usersInRole.Any())
+            {
+                return NotFound(new ErrorResponseDto
+                {
+                    Status = "error",
+                    Message = $"No users found with the role '{role}'",
+                });
+            }
+
+            var users =  usersInRole.Where(user => user.CompanyId == loggedInUser.CompanyId)
+                                          .Select(user => user.ToUserDto()).ToList();
+
+            if (!users.Any())
+            {
+                return NotFound(new ErrorResponseDto
+                {
+                    Status = "error",
+                    Message = $"No users found with the role '{role}' in your company.",
+                });
+            }
+
 
             return Ok(new ApiResponseDto<List<UserDto>>
             {
