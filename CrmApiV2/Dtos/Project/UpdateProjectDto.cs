@@ -15,6 +15,6 @@ namespace CrmApiV2.Dtos.Project
         [Required]
         public double MonthlyPrice { get; set; }
         [Required]
-        public List<string> AssignedEmployeeIds { get; set; } = new List<string>();
+        public List<string> AssignedUserIds { get; set; } = new List<string>();
     }
 }

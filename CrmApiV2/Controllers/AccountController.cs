@@ -1,8 +1,10 @@
-﻿using CrmApiV2.Dtos.Account;
+﻿using CrmApiV2.Data;
+using CrmApiV2.Dtos.Account;
 using CrmApiV2.Dtos.Response;
 using CrmApiV2.Interface;
 using CrmApiV2.Mapper;
 using CrmApiV2.Models;
+using CrmApiV2.Utilities;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
@@ -21,12 +23,14 @@ namespace CrmApiV2.Controllers
         private readonly ITokenService _tokenService;
         private readonly SignInManager<ApplicationUser> _signInManager;
         private readonly RoleManager<IdentityRole> _roleManager;
-        public AccountController(UserManager<ApplicationUser> userManager, ITokenService tokenService, SignInManager<ApplicationUser> signInManager, RoleManager<IdentityRole> roleManager)
+        private readonly ApplicationDbContext _db;
+        public AccountController(UserManager<ApplicationUser> userManager, ITokenService tokenService, SignInManager<ApplicationUser> signInManager, RoleManager<IdentityRole> roleManager, ApplicationDbContext db)
         {
             _userManager = userManager;
             _tokenService = tokenService;
             _signInManager = signInManager;
             _roleManager = roleManager;
+            _db = db;
         }
 
 
@@ -178,6 +182,16 @@ namespace CrmApiV2.Controllers
                 });
             }
 
+            // strart login time
+            var timeLog = new UserTimeLog
+            {
+                ApplicationUserId = user.Id,
+                LoginTime = DateTime.UtcNow
+            };
+
+            _db.UserTimeLogs.Add(timeLog);
+            await _db.SaveChangesAsync();
+
             return Ok(
                 new ApiResponseDto<SignupResponseDataDto>
                 {
@@ -196,13 +210,75 @@ namespace CrmApiV2.Controllers
             );
         }
 
+        [HttpPost("logout/{userId}")]
+        [Authorize]
+        public async Task<IActionResult> Logout([FromRoute] string userId)
+        {
+            var timeLog = await _db.UserTimeLogs
+                .Where(tl => tl.ApplicationUserId == userId && tl.LogoutTime == null)
+                .OrderByDescending(tl => tl.LoginTime)
+                .FirstOrDefaultAsync();
+
+            if (timeLog == null)
+            {
+                return BadRequest("No active login session found.");
+            }
+
+            timeLog.LogoutTime = DateTime.UtcNow;
+
+            // Calculate break time if there was a previous session
+            var previousLog = await _db.UserTimeLogs
+                .Where(tl => tl.ApplicationUserId == userId && tl.LogoutTime != null)
+                .OrderByDescending(tl => tl.LogoutTime)
+                .FirstOrDefaultAsync();
+
+            TimeSpan breakTime = TimeSpan.Zero;
+
+
+            if (previousLog != null)
+            {
+                breakTime = timeLog.LoginTime - previousLog.LogoutTime ?? TimeSpan.Zero;
+                timeLog.BreakTime = breakTime;
+            }
+
+            // Calculate working time
+            TimeSpan workingTime = timeLog.LogoutTime.Value - timeLog.LoginTime;
+
+            // Update daily summary
+            var summary = await _db.DailyUserSummaries
+                .Where(s => s.ApplicationUserId == userId && s.Date == DateTime.UtcNow.Date)
+                .FirstOrDefaultAsync();
+
+            if (summary == null)
+            {
+                summary = new DailyUserSummary
+                {
+                    ApplicationUserId = userId,
+                    Date = DateTime.UtcNow.Date,
+                    TotalWorkingTime = workingTime,
+                    TotalBreakTime = breakTime
+                };
+                _db.DailyUserSummaries.Add(summary);
+            }
+            else
+            {
+                summary.TotalWorkingTime += workingTime;
+                summary.TotalBreakTime += breakTime;
+                _db.DailyUserSummaries.Update(summary);
+            }
+
+            await _db.SaveChangesAsync();
+
+            return Ok("Logout recorded successfully.");
+        }
+
         [HttpGet("roles")]
         public async Task<ActionResult> GetAllRoles()
         {
             var roles = await _roleManager.Roles.Select(s => s.Name).ToListAsync();
             return Ok(new ApiResponseDto<List<string>>
             {
-                Status = "Success",
+                Status = "success",
                 Message = "Roles retrieved successfully",
                 Data = roles
             });
@@ -248,7 +324,7 @@ namespace CrmApiV2.Controllers
                     Email = user.Email,
                     Name = user.Name,
                     PhoneNumber = user.PhoneNumber,
-                    Address =user.Address,
+                    Address = user.Address,
                     UserName = user.UserName,
                     CompanyId = user.CompanyId,
                     Roles = roles.ToList()
@@ -290,7 +366,7 @@ namespace CrmApiV2.Controllers
                 });
             }
 
-            var users =  usersInRole.Where(user => user.CompanyId == loggedInUser.CompanyId)
+            var users = usersInRole.Where(user => user.CompanyId == loggedInUser.CompanyId)
                                           .Select(user => user.ToUserDto()).ToList();
 
             if (!users.Any())
@@ -305,12 +381,124 @@ namespace CrmApiV2.Controllers
 
             return Ok(new ApiResponseDto<List<UserDto>>
             {
-                Status = "Success",
+                Status = "success",
                 Message = "Users retrieved successfully",
                 Data = users
             });
         }
 
+        [HttpGet("userWorkingStatus/{userId}")]
+        [Authorize]
+        public async Task<ActionResult> UserWorkingStatus([FromRoute] string userId)
+        {
+            var workingStatusList = await _db.DailyUserSummaries.Where(u => u.ApplicationUserId == userId).ToListAsync();
+
+            if (!workingStatusList.Any())
+            {
+                return NotFound(new ErrorResponseDto
+                {
+                    Status = "error",
+                    Message = $"No Record Found.",
+                });
+            }
+
+            return Ok(new ApiResponseDto<List<DailyUserSummary>>
+            {
+                Status = "success",
+                Message = "Users retrieved successfully",
+                Data = workingStatusList
+            });
+        }
+
+
+        [HttpPost("startBreakTime/{userId}")]
+        [Authorize]
+        public async Task<IActionResult> StartBreakTime([FromRoute] string userId)
+        {
+            var timeLog = await _db.UserTimeLogs
+                .Where(tl => tl.ApplicationUserId == userId && tl.LogoutTime == null)
+                .OrderByDescending(tl => tl.LoginTime)
+                .FirstOrDefaultAsync();
+
+            if (timeLog == null)
+            {
+                return BadRequest("No active login session found.");
+            }
+
+            timeLog.LogoutTime = DateTime.UtcNow;
+
+            // Calculate break time if there was a previous session
+            var previousLog = await _db.UserTimeLogs
+                .Where(tl => tl.ApplicationUserId == userId && tl.LogoutTime != null)
+                .OrderByDescending(tl => tl.LogoutTime)
+                .FirstOrDefaultAsync();
+
+            TimeSpan breakTime = TimeSpan.Zero;
+
+
+            if (previousLog != null)
+            {
+                breakTime = timeLog.LoginTime - previousLog.LogoutTime ?? TimeSpan.Zero;
+                timeLog.BreakTime = breakTime;
+            }
+
+            // Calculate working time
+            TimeSpan workingTime = timeLog.LogoutTime.Value - timeLog.LoginTime;
+
+            // Update daily summary
+            var summary = await _db.DailyUserSummaries
+                .Where(s => s.ApplicationUserId == userId && s.Date == DateTime.UtcNow.Date)
+                .FirstOrDefaultAsync();
+
+            if (summary == null)
+            {
+                summary = new DailyUserSummary
+                {
+                    ApplicationUserId = userId,
+                    Date = DateTime.UtcNow.Date,
+                    TotalWorkingTime = workingTime,
+                    TotalBreakTime = breakTime
+                };
+                _db.DailyUserSummaries.Add(summary);
+            }
+            else
+            {
+                summary.TotalWorkingTime += workingTime;
+                summary.TotalBreakTime += breakTime;
+                _db.DailyUserSummaries.Update(summary);
+            }
+
+            await _db.SaveChangesAsync();
+
+            return Ok(new ApiResponseDto<string>
+            {
+                Status = SD.Success,
+                Message = "Breaktime Start"
+            }
+                  );
+        }
+
+
+        [HttpPost("endBreakTime/{userId : string}")]
+        [Authorize]
+        public async Task<IActionResult> EndBreakTime([FromRoute] string userId)
+        {
+            var timeLog = new UserTimeLog
+            {
+                ApplicationUserId = userId,
+                LoginTime = DateTime.UtcNow
+            };
+
+            _db.UserTimeLogs.Add(timeLog);
+            await _db.SaveChangesAsync();
+
+            return Ok(new ApiResponseDto<string>
+            {
+                Status = SD.Success,
+                Message = "Breaktime End"
+            }
+                 );
+        }
+
     }
 }
-

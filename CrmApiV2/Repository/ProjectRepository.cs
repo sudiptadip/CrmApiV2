@@ -52,7 +52,7 @@ namespace CrmApiV2.Repository
 
             List<UserProject> userProject = new List<UserProject>();
 
-            foreach (var item in project.AssignedEmployeeIds)
+            foreach (var item in project.AssignedUserIds)
             {
                 userProject.Add(new UserProject { ProjectId = projectModel.Id, UserId = item });
             }
@@ -115,7 +115,7 @@ namespace CrmApiV2.Repository
 
             // Update UserProjects
             var currentAssignedEmployees = existingProject.UserProjects.Select(up => up.UserId).ToList();
-            var newAssignedEmployees = project.AssignedEmployeeIds;
+            var newAssignedEmployees = project.AssignedUserIds;
 
             // Find employees to remove
             var employeesToRemove = currentAssignedEmployees.Except(newAssignedEmployees).ToList();

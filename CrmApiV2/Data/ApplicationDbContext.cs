@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 using System.Collections.Generic;
+using System.Reflection.Emit;
 
 namespace CrmApiV2.Data
 {
@@ -16,6 +17,8 @@ namespace CrmApiV2.Data
         public DbSet<Company> Companies { get; set; }
         public DbSet<Project> Projects { get; set; }
         public DbSet<UserProject> UserProjects { get; set; }
+        public DbSet<UserTimeLog> UserTimeLogs { get; set; }
+        public DbSet<DailyUserSummary> DailyUserSummaries { get; set; }
 
         protected override void OnModelCreating(ModelBuilder builder)
         {
@@ -25,13 +28,23 @@ namespace CrmApiV2.Data
                 .HasOne(up => up.User)
                 .WithMany(u => u.UserProjects)
                 .HasForeignKey(up => up.UserId)
-                .OnDelete(DeleteBehavior.Restrict); // Prevents cascade delete
+                .OnDelete(DeleteBehavior.Restrict);
 
             builder.Entity<UserProject>()
                 .HasOne(up => up.Project)
                 .WithMany(p => p.UserProjects)
                 .HasForeignKey(up => up.ProjectId)
-                .OnDelete(DeleteBehavior.Restrict); // Prevents cascade delete
+                .OnDelete(DeleteBehavior.Restrict);
+
+            builder.Entity<ApplicationUser>()
+            .HasMany(e => e.TimeLogs)
+            .WithOne(t => t.ApplicationUser)
+            .HasForeignKey(t => t.ApplicationUserId);
+
+            builder.Entity<ApplicationUser>()
+                .HasMany(e => e.DailySummaries)
+                .WithOne(d => d.ApplicationUser)
+                .HasForeignKey(d => d.ApplicationUserId);
 
             List<IdentityRole> roles = new List<IdentityRole> {
                 new IdentityRole {

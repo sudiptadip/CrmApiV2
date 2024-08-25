@@ -22,5 +22,7 @@ namespace CrmApiV2.Models
         public Company Company { get; set; }
 
         public ICollection<UserProject> UserProjects { get; set; } = new List<UserProject>();
+        public ICollection<UserTimeLog> TimeLogs { get; set; }
+        public ICollection<DailyUserSummary> DailySummaries { get; set; }
     }
 }
