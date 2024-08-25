@@ -33,66 +33,45 @@ namespace CrmApiV2.Controllers
         [HttpPost("register")]
         public async Task<ActionResult> Register([FromBody] RegisterDto registerDto)
         {
+            if (!ModelState.IsValid)
+            {
+                var errorMessage = string.Join("; ", ModelState.Values
+                                           .SelectMany(v => v.Errors)
+                                           .Select(e => e.ErrorMessage));
+
+                return BadRequest(new ErrorResponseDto
+                {
+                    Status = "error",
+                    Message = $"Validation failed: {errorMessage}",
+                });
+            }
+
+            var existingUser = await _userManager.FindByEmailAsync(registerDto.Email);
+            if (existingUser != null)
+            {
+                return BadRequest(new ErrorResponseDto
+                {
+                    Status = "error",
+                    Message = "Email is already taken. Please use a different email.",
+                });
+            }
+
+            var appUser = new ApplicationUser
+            {
+                UserName = registerDto.Email,
+                Email = registerDto.Email,
+                CompanyId = registerDto.ComapnyId,
+                Name = registerDto.Name,
+                PhoneNumber = registerDto.PhoneNumber,
+                Address = registerDto.Address,
+                CreatedOn = DateTime.Now,
+            };
+
             try
             {
-                if (!ModelState.IsValid)
-                {
-                    var errorMessage = string.Join("; ", ModelState.Values
-                                               .SelectMany(v => v.Errors)
-                                               .Select(e => e.ErrorMessage));
-
-                    return BadRequest(new ErrorResponseDto
-                    {
-                        Status = "error",
-                        Message = $"Validation failed: {errorMessage}",
-                    });
-                }
-
-                var appUser = new ApplicationUser
-                {
-                    UserName = registerDto.Email,
-                    Email = registerDto.Email,
-                    CompanyId = registerDto.ComapnyId,
-                    Name = registerDto.Name,
-                    PhoneNumber = registerDto.PhoneNumber,
-                    Address = registerDto.Address,
-                    CreatedOn = DateTime.Now,
-                };
-
                 var createUser = await _userManager.CreateAsync(appUser, registerDto.Password);
 
-                if (createUser.Succeeded)
-                {
-                    var roleResult = await _userManager.AddToRoleAsync(appUser, registerDto.Role);
-                    if (roleResult.Succeeded)
-                    {
-                        return Ok(
-                            new ApiResponseDto<SignupResponseDataDto>
-                            {
-                                Status = "success",
-                                Message = "Account created successfully.",
-                                Data = new SignupResponseDataDto
-                                {
-                                    Name = appUser.Name,
-                                    Username = appUser.UserName,
-                                    UserId = appUser.Id,
-                                    Email = appUser.Email,
-                                    Mobile = appUser.PhoneNumber,
-                                    Token = _tokenService.CreateToken(appUser)
-                                }
-                            }
-                        );
-                    }
-                    else
-                    {
-                        return StatusCode(500, new ErrorResponseDto
-                        {
-                            Status = "error",
-                            Message = "Failed to assign the role to the user. Please try again later.",
-                        });
-                    }
-                }
-                else
+                if (!createUser.Succeeded)
                 {
                     var errorMessage = string.Join("; ", createUser.Errors.Select(e => e.Description));
                     return BadRequest(new ErrorResponseDto
@@ -101,6 +80,57 @@ namespace CrmApiV2.Controllers
                         Message = $"Failed to create the user: {errorMessage}",
                     });
                 }
+
+                try
+                {
+                    var roleResult = await _userManager.AddToRoleAsync(appUser, registerDto.Role);
+                    if (!roleResult.Succeeded)
+                    {
+                        // Role assignment failed, delete the created user
+                        var deleteResult = await _userManager.DeleteAsync(appUser);
+                        if (!deleteResult.Succeeded)
+                        {
+                            return StatusCode(500, new ErrorResponseDto
+                            {
+                                Status = "error",
+                                Message = "Failed to assign the role and unable to delete the user. Please contact support.",
+                            });
+                        }
+
+                        return StatusCode(500, new ErrorResponseDto
+                        {
+                            Status = "error",
+                            Message = "Failed to assign the role to the user. The user has been deleted.",
+                        });
+                    }
+                }
+                catch (Exception ex)
+                {
+                    // Handle any exceptions during role assignment or deletion
+                    await _userManager.DeleteAsync(appUser); // Attempt to delete the user in case of failure
+                    return StatusCode(500, new ErrorResponseDto
+                    {
+                        Status = "error",
+                        Message = $"An error occurred during role assignment: {ex.Message}",
+                    });
+                }
+
+                return Ok(
+                    new ApiResponseDto<SignupResponseDataDto>
+                    {
+                        Status = "success",
+                        Message = "Account created successfully.",
+                        Data = new SignupResponseDataDto
+                        {
+                            Name = appUser.Name,
+                            Username = appUser.UserName,
+                            UserId = appUser.Id,
+                            Email = appUser.Email,
+                            Mobile = appUser.PhoneNumber,
+                            Token = _tokenService.CreateToken(appUser)
+                        }
+                    }
+                );
             }
             catch (Exception ex)
             {
@@ -233,7 +263,6 @@ namespace CrmApiV2.Controllers
             });
         }
 
-
         [HttpGet("usersByRole/{role}")]
         [Authorize]
         public async Task<ActionResult> GetAllUsersByRole([FromRoute] string role)
@@ -284,3 +313,4 @@ namespace CrmApiV2.Controllers
 
     }
 }
+
