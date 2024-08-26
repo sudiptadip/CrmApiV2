@@ -1,5 +1,6 @@
 ﻿using CrmApiV2.Data;
 using CrmApiV2.Dtos.Account;
+using CrmApiV2.Dtos.Email;
 using CrmApiV2.Dtos.Response;
 using CrmApiV2.Interface;
 using CrmApiV2.Mapper;
@@ -24,13 +25,20 @@ namespace CrmApiV2.Controllers
         private readonly SignInManager<ApplicationUser> _signInManager;
         private readonly RoleManager<IdentityRole> _roleManager;
         private readonly ApplicationDbContext _db;
-        public AccountController(UserManager<ApplicationUser> userManager, ITokenService tokenService, SignInManager<ApplicationUser> signInManager, RoleManager<IdentityRole> roleManager, ApplicationDbContext db)
+        private readonly IEmailService _emailService;
+        public AccountController(UserManager<ApplicationUser> userManager, 
+            ITokenService tokenService, 
+            SignInManager<ApplicationUser> signInManager, 
+            RoleManager<IdentityRole> roleManager, 
+            ApplicationDbContext db,
+            IEmailService emailService)
         {
             _userManager = userManager;
             _tokenService = tokenService;
             _signInManager = signInManager;
             _roleManager = roleManager;
             _db = db;
+            _emailService = emailService;
         }
 
         [HttpPost("register")]
@@ -89,7 +97,6 @@ namespace CrmApiV2.Controllers
                     var roleResult = await _userManager.AddToRoleAsync(appUser, registerDto.Role);
                     if (!roleResult.Succeeded)
                     {
-                        // Role assignment failed, delete the created user
                         var deleteResult = await _userManager.DeleteAsync(appUser);
                         if (!deleteResult.Succeeded)
                         {
@@ -117,6 +124,107 @@ namespace CrmApiV2.Controllers
                         Message = $"An error occurred during role assignment: {ex.Message}",
                     });
                 }
+
+                var emailDto = new EmailDto
+                {
+                    To = "sudiptabhattacharjee000@gmail.com",
+                    Subject = "Your Access Credentials For NexaCrm",
+                    Body = $@"<!DOCTYPE html>
+<html lang=""en"">
+<head>
+    <meta charset=""UTF-8"">
+    <meta name=""viewport"" content=""width=device-width, initial-scale=1.0"">
+    <title>Access Credentials</title>
+    <style>
+        body {{
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f4;
+            color: #333;
+            margin: 0;
+            padding: 20px;
+        }}
+        .container {{
+            max-width: 600px;
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            margin: auto;
+        }}
+        h1 {{
+            font-size: 24px;
+            color: #0056b3;
+        }}
+        p {{
+            font-size: 16px;
+            line-height: 1.6;
+        }}
+        .credentials {{
+            background-color: #f8f9fa;
+            padding: 15px;
+            border-left: 4px solid #007bff;
+            margin: 20px 0;
+            border-radius: 4px;
+        }}
+        .credentials p {{
+            margin: 0;
+            font-size: 16px;
+        }}
+        .footer {{
+            margin-top: 20px;
+            font-size: 14px;
+            color: #777;
+        }}
+        .footer a {{
+            color: #0056b3;
+            text-decoration: none;
+        }}
+    </style>
+</head>
+<body>
+    <div class=""container"">
+        <h1>Access Credentials for NexaCrm</h1>
+
+        <p>Dear {appUser.Name},</p>
+
+        <p>I hope this message finds you well.</p>
+
+        <p>As part of our ongoing collaboration, we are providing you with access credentials to <strong>NexaCrm</strong>. Please find the details below:</p>
+
+        <div class=""credentials"">
+            <p><strong>Email:</strong> {appUser.Email}</p>
+            <p><strong>Password:</strong> {registerDto.Password}</p>
+        </div>
+
+        <p><strong>Instructions:</strong></p>
+        <ol>
+            <li><strong>Login:</strong> Please use the above credentials to log in to <strong>NexaCrm</strong> via <strong>https://shubham.com/</strong>.</li>
+            
+            <li style=""margin-top: 13px;"" ><strong>Support:</strong> Should you encounter any issues or require assistance, please do not hesitate to contact our support team at <strong>+91 8617742849</strong>.</li>
+        </ol>
+
+        <p>We are committed to ensuring that you have a smooth experience using our services. If you have any questions or require further clarification, feel free to reach out to me directly.</p>
+
+        <p>Thank you for your continued trust and partnership.</p>
+
+        <p>Best regards,</p>
+        <p><strong>Shubham Gupta</strong><br>
+        <br>
+        NexaCrm<br>
+        +91 8617742849<br>
+        shubhamgupta123@gmail.com</p>
+
+        <div class=""footer"">
+            <p><strong>Security Note:</strong> Please ensure that these credentials are stored securely and not shared with unauthorized personnel. We advise enabling two-factor authentication (2FA) to further protect your account.</p>
+        </div>
+    </div>
+</body>
+</html>
+"
+                };
+
+                _emailService.SendEmail(emailDto);
+
 
                 return Ok(
                     new ApiResponseDto<SignupResponseDataDto>
