@@ -127,7 +127,7 @@ namespace CrmApiV2.Controllers
 
                 var emailDto = new EmailDto
                 {
-                    To = "sudiptabhattacharjee000@gmail.com",
+                    To = appUser.Email,
                     Subject = "Your Access Credentials For NexaCrm",
                     Body = $@"<!DOCTYPE html>
 <html lang=""en"">
