@@ -26,6 +26,7 @@ namespace CrmApiV2.Controllers
         private readonly RoleManager<IdentityRole> _roleManager;
         private readonly ApplicationDbContext _db;
         private readonly IEmailService _emailService;
+
         public AccountController(UserManager<ApplicationUser> userManager, 
             ITokenService tokenService, 
             SignInManager<ApplicationUser> signInManager, 
@@ -49,7 +50,7 @@ namespace CrmApiV2.Controllers
                 var errorMessage = string.Join("; ", ModelState.Values
                                            .SelectMany(v => v.Errors)
                                            .Select(e => e.ErrorMessage));
-
+                
                 return BadRequest(new ErrorResponseDto
                 {
                     Status = "error",
@@ -289,6 +290,10 @@ namespace CrmApiV2.Controllers
                 });
             }
 
+            
+            var roles = await _userManager.GetRolesAsync(user);
+            var role = roles.FirstOrDefault();
+
             // strart login time
             var timeLog = new UserTimeLog
             {
@@ -307,6 +312,7 @@ namespace CrmApiV2.Controllers
                     Data = new SignupResponseDataDto
                     {
                         Name = user.Name,
+                        Role = role,
                         UserId = user.Id,
                         Email = user.Email,
                         Mobile = user.PhoneNumber,
@@ -606,4 +612,4 @@ namespace CrmApiV2.Controllers
         }
 
     }
-} 
+}
