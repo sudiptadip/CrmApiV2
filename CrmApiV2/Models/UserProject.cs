@@ -1,5 +1,6 @@
 ﻿using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using CrmApiV2.Models.Register;
 
 namespace CrmApiV2.Models
 {

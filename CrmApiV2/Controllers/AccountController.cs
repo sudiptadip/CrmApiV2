@@ -5,6 +5,7 @@ using CrmApiV2.Dtos.Response;
 using CrmApiV2.Interface;
 using CrmApiV2.Mapper;
 using CrmApiV2.Models;
+using CrmApiV2.Models.Register;
 using CrmApiV2.Utilities;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;

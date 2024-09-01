@@ -3,12 +3,10 @@ using Microsoft.EntityFrameworkCore.Migrations;
 
 #nullable disable
 
-#pragma warning disable CA1814 // Prefer jagged arrays over multidimensional
-
 namespace CrmApiV2.Migrations
 {
     /// <inheritdoc />
-    public partial class UpdateUserProjectForeignKeys : Migration
+    public partial class NewMigration : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
@@ -18,6 +16,7 @@ namespace CrmApiV2.Migrations
                 columns: table => new
                 {
                     Id = table.Column<string>(type: "nvarchar(450)", nullable: false),
+                    Discriminator = table.Column<string>(type: "nvarchar(21)", maxLength: 21, nullable: false),
                     Name = table.Column<string>(type: "nvarchar(256)", maxLength: 256, nullable: true),
                     NormalizedName = table.Column<string>(type: "nvarchar(256)", maxLength: 256, nullable: true),
                     ConcurrencyStamp = table.Column<string>(type: "nvarchar(max)", nullable: true)
@@ -46,6 +45,20 @@ namespace CrmApiV2.Migrations
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_Companies", x => x.Id);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "FormTemplates",
+                columns: table => new
+                {
+                    FormTemplateId = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1"),
+                    FormName = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    CompanyId = table.Column<int>(type: "int", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_FormTemplates", x => x.FormTemplateId);
                 });
 
             migrationBuilder.CreateTable(
@@ -119,10 +132,11 @@ namespace CrmApiV2.Migrations
                     ClientName = table.Column<string>(type: "nvarchar(max)", nullable: false),
                     StartDate = table.Column<DateTime>(type: "datetime2", nullable: false),
                     MonthlyPrice = table.Column<double>(type: "float", nullable: false),
+                    IsComplete = table.Column<bool>(type: "bit", nullable: false),
                     CompanyId = table.Column<int>(type: "int", nullable: false),
                     CreatedBy = table.Column<string>(type: "nvarchar(max)", nullable: false),
                     CreatedOn = table.Column<DateTime>(type: "datetime2", nullable: false),
-                    ModifiedBy = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    ModifiedBy = table.Column<string>(type: "nvarchar(max)", nullable: true),
                     ModifiedOn = table.Column<DateTime>(type: "datetime2", nullable: true),
                     IsDeleted = table.Column<bool>(type: "bit", nullable: false)
                 },
@@ -134,6 +148,56 @@ namespace CrmApiV2.Migrations
                         column: x => x.CompanyId,
                         principalTable: "Companies",
                         principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "FormFields",
+                columns: table => new
+                {
+                    FieldId = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1"),
+                    FormTemplateId = table.Column<int>(type: "int", nullable: false),
+                    FieldName = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    FieldType = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    OtherValue = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    IsRequired = table.Column<bool>(type: "bit", nullable: false),
+                    CompanyId = table.Column<int>(type: "int", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_FormFields", x => x.FieldId);
+                    table.ForeignKey(
+                        name: "FK_FormFields_FormTemplates_FormTemplateId",
+                        column: x => x.FormTemplateId,
+                        principalTable: "FormTemplates",
+                        principalColumn: "FormTemplateId",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "RoleFormTemplates",
+                columns: table => new
+                {
+                    RoleId = table.Column<string>(type: "nvarchar(450)", nullable: false),
+                    FormTemplateId = table.Column<int>(type: "int", nullable: false),
+                    RoleFormTemplateId = table.Column<int>(type: "int", nullable: false),
+                    CompanyId = table.Column<int>(type: "int", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_RoleFormTemplates", x => new { x.RoleId, x.FormTemplateId });
+                    table.ForeignKey(
+                        name: "FK_RoleFormTemplates_AspNetRoles_RoleId",
+                        column: x => x.RoleId,
+                        principalTable: "AspNetRoles",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                    table.ForeignKey(
+                        name: "FK_RoleFormTemplates_FormTemplates_FormTemplateId",
+                        column: x => x.FormTemplateId,
+                        principalTable: "FormTemplates",
+                        principalColumn: "FormTemplateId",
                         onDelete: ReferentialAction.Cascade);
                 });
 
@@ -223,6 +287,50 @@ namespace CrmApiV2.Migrations
                 });
 
             migrationBuilder.CreateTable(
+                name: "DailyUserSummaries",
+                columns: table => new
+                {
+                    Id = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1"),
+                    ApplicationUserId = table.Column<string>(type: "nvarchar(450)", nullable: false),
+                    Date = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    TotalWorkingTime = table.Column<TimeSpan>(type: "time", nullable: false),
+                    TotalBreakTime = table.Column<TimeSpan>(type: "time", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_DailyUserSummaries", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_DailyUserSummaries_AspNetUsers_ApplicationUserId",
+                        column: x => x.ApplicationUserId,
+                        principalTable: "AspNetUsers",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "UserTimeLogs",
+                columns: table => new
+                {
+                    Id = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1"),
+                    ApplicationUserId = table.Column<string>(type: "nvarchar(450)", nullable: false),
+                    LoginTime = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    LogoutTime = table.Column<DateTime>(type: "datetime2", nullable: true),
+                    BreakTime = table.Column<TimeSpan>(type: "time", nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_UserTimeLogs", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_UserTimeLogs_AspNetUsers_ApplicationUserId",
+                        column: x => x.ApplicationUserId,
+                        principalTable: "AspNetUsers",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
                 name: "UserProjects",
                 columns: table => new
                 {
@@ -248,18 +356,32 @@ namespace CrmApiV2.Migrations
                         onDelete: ReferentialAction.Restrict);
                 });
 
-            migrationBuilder.InsertData(
-                table: "AspNetRoles",
-                columns: new[] { "Id", "ConcurrencyStamp", "Name", "NormalizedName" },
-                values: new object[,]
+            migrationBuilder.CreateTable(
+                name: "EmployeeFormDatas",
+                columns: table => new
                 {
-                    { "247a5d47-b9df-4ffd-968b-3bacf501bd54", null, "Sales", "SALES" },
-                    { "395e9f0d-e5c1-4654-a284-947731db68ce", null, "Super Admin", "SUPER_ADMIN" },
-                    { "50255a06-a579-4890-80cb-6c2e4091e41d", null, "Content Writer", "CONTENT_WRITER" },
-                    { "6b637e82-1c2e-4c66-a24b-256483a33a87", null, "Developer", "DEVELOPER" },
-                    { "7b6432e3-93c4-43b6-80c3-51a11c133907", null, "Admin", "ADMIN" },
-                    { "d9e0a392-b942-48c1-8fde-cedc9a438d67", null, "Seo", "SEO" },
-                    { "ec3cf849-5d83-4c74-902e-4c004a5a38a9", null, "Academic Writer", "ACADEMIC_WRITER" }
+                    EmployeeFormDataId = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1"),
+                    UserId = table.Column<string>(type: "nvarchar(450)", nullable: false),
+                    FieldId = table.Column<int>(type: "int", nullable: false),
+                    FieldValue = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    CompanyId = table.Column<int>(type: "int", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_EmployeeFormDatas", x => x.EmployeeFormDataId);
+                    table.ForeignKey(
+                        name: "FK_EmployeeFormDatas_AspNetUsers_UserId",
+                        column: x => x.UserId,
+                        principalTable: "AspNetUsers",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                    table.ForeignKey(
+                        name: "FK_EmployeeFormDatas_FormFields_FieldId",
+                        column: x => x.FieldId,
+                        principalTable: "FormFields",
+                        principalColumn: "FieldId",
+                        onDelete: ReferentialAction.Cascade);
                 });
 
             migrationBuilder.CreateIndex(
@@ -307,9 +429,34 @@ namespace CrmApiV2.Migrations
                 filter: "[NormalizedUserName] IS NOT NULL");
 
             migrationBuilder.CreateIndex(
+                name: "IX_DailyUserSummaries_ApplicationUserId",
+                table: "DailyUserSummaries",
+                column: "ApplicationUserId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_EmployeeFormDatas_FieldId",
+                table: "EmployeeFormDatas",
+                column: "FieldId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_EmployeeFormDatas_UserId",
+                table: "EmployeeFormDatas",
+                column: "UserId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_FormFields_FormTemplateId",
+                table: "FormFields",
+                column: "FormTemplateId");
+
+            migrationBuilder.CreateIndex(
                 name: "IX_Projects_CompanyId",
                 table: "Projects",
                 column: "CompanyId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_RoleFormTemplates_FormTemplateId",
+                table: "RoleFormTemplates",
+                column: "FormTemplateId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_UserProjects_ProjectId",
@@ -320,6 +467,11 @@ namespace CrmApiV2.Migrations
                 name: "IX_UserProjects_UserId",
                 table: "UserProjects",
                 column: "UserId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_UserTimeLogs_ApplicationUserId",
+                table: "UserTimeLogs",
+                column: "ApplicationUserId");
         }
 
         /// <inheritdoc />
@@ -341,16 +493,34 @@ namespace CrmApiV2.Migrations
                 name: "AspNetUserTokens");
 
             migrationBuilder.DropTable(
+                name: "DailyUserSummaries");
+
+            migrationBuilder.DropTable(
+                name: "EmployeeFormDatas");
+
+            migrationBuilder.DropTable(
+                name: "RoleFormTemplates");
+
+            migrationBuilder.DropTable(
                 name: "UserProjects");
+
+            migrationBuilder.DropTable(
+                name: "UserTimeLogs");
+
+            migrationBuilder.DropTable(
+                name: "FormFields");
 
             migrationBuilder.DropTable(
                 name: "AspNetRoles");
 
             migrationBuilder.DropTable(
+                name: "Projects");
+
+            migrationBuilder.DropTable(
                 name: "AspNetUsers");
 
             migrationBuilder.DropTable(
-                name: "Projects");
+                name: "FormTemplates");
 
             migrationBuilder.DropTable(
                 name: "Companies");

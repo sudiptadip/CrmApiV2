@@ -1,6 +1,7 @@
 using CrmApiV2.Data;
 using CrmApiV2.Interface;
 using CrmApiV2.Models;
+using CrmApiV2.Models.Register;
 using CrmApiV2.Repository;
 using CrmApiV2.Service;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -81,6 +82,7 @@ builder.Services.AddScoped<ICompanyRepository, CompanyRepository>();
 builder.Services.AddScoped<ICurrentUserService, CurrentUserService>();
 builder.Services.AddScoped<IProjectRepository, ProjectRepository>();
 builder.Services.AddScoped<IEmailService, EmailService>();
+builder.Services.AddScoped<RoleSeeder>();
 builder.Services.Configure<EmailSettings>(builder.Configuration.GetSection("EmailSettings"));
 
 
@@ -105,6 +107,12 @@ if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
     app.UseSwaggerUI();
+}
+
+using (var scope = app.Services.CreateScope())
+{
+    var roleSeeder = scope.ServiceProvider.GetRequiredService<RoleSeeder>();
+    await roleSeeder.SeedRolesAsync();
 }
 
 app.UseHttpsRedirection();

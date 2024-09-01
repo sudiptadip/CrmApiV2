@@ -1,5 +1,5 @@
 ﻿using CrmApiV2.Interface;
-using CrmApiV2.Models;
+using CrmApiV2.Models.Register;
 using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;

@@ -12,8 +12,8 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace CrmApiV2.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20240825165513_addEmployeeWorkingTimeAndBreakTime")]
-    partial class addEmployeeWorkingTimeAndBreakTime
+    [Migration("20240901101215_NewMigration")]
+    partial class NewMigration
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -25,7 +25,242 @@ namespace CrmApiV2.Migrations
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
 
-            modelBuilder.Entity("CrmApiV2.Models.ApplicationUser", b =>
+            modelBuilder.Entity("CrmApiV2.Models.Company", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Address")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("CreatedBy")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime>("CreatedOn")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Email")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("ModifiedBy")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime?>("ModifiedOn")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("PhoneNumber")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("Companies");
+                });
+
+            modelBuilder.Entity("CrmApiV2.Models.DailyUserSummary", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("ApplicationUserId")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<DateTime>("Date")
+                        .HasColumnType("datetime2");
+
+                    b.Property<TimeSpan>("TotalBreakTime")
+                        .HasColumnType("time");
+
+                    b.Property<TimeSpan>("TotalWorkingTime")
+                        .HasColumnType("time");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ApplicationUserId");
+
+                    b.ToTable("DailyUserSummaries");
+                });
+
+            modelBuilder.Entity("CrmApiV2.Models.DynamicForm.EmployeeFormData", b =>
+                {
+                    b.Property<int>("EmployeeFormDataId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("EmployeeFormDataId"));
+
+                    b.Property<int>("CompanyId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("FieldId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("FieldValue")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("UserId")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(450)");
+
+                    b.HasKey("EmployeeFormDataId");
+
+                    b.HasIndex("FieldId");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("EmployeeFormDatas");
+                });
+
+            modelBuilder.Entity("CrmApiV2.Models.DynamicForm.FormField", b =>
+                {
+                    b.Property<int>("FieldId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("FieldId"));
+
+                    b.Property<int>("CompanyId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("FieldName")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("FieldType")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("FormTemplateId")
+                        .HasColumnType("int");
+
+                    b.Property<bool>("IsRequired")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("OtherValue")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("FieldId");
+
+                    b.HasIndex("FormTemplateId");
+
+                    b.ToTable("FormFields");
+                });
+
+            modelBuilder.Entity("CrmApiV2.Models.DynamicForm.FormTemplate", b =>
+                {
+                    b.Property<int>("FormTemplateId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("FormTemplateId"));
+
+                    b.Property<int>("CompanyId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("FormName")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("FormTemplateId");
+
+                    b.ToTable("FormTemplates");
+                });
+
+            modelBuilder.Entity("CrmApiV2.Models.DynamicForm.RoleFormTemplate", b =>
+                {
+                    b.Property<string>("RoleId")
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<int>("FormTemplateId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("CompanyId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("RoleFormTemplateId")
+                        .HasColumnType("int");
+
+                    b.HasKey("RoleId", "FormTemplateId");
+
+                    b.HasIndex("FormTemplateId");
+
+                    b.ToTable("RoleFormTemplates");
+                });
+
+            modelBuilder.Entity("CrmApiV2.Models.Project", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("ClientName")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("CompanyId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("CreatedBy")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime>("CreatedOn")
+                        .HasColumnType("datetime2");
+
+                    b.Property<bool>("IsComplete")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("ModifiedBy")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime?>("ModifiedOn")
+                        .HasColumnType("datetime2");
+
+                    b.Property<double>("MonthlyPrice")
+                        .HasColumnType("float");
+
+                    b.Property<string>("ProjectName")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime>("StartDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("WebsiteUrl")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CompanyId");
+
+                    b.ToTable("Projects");
+                });
+
+            modelBuilder.Entity("CrmApiV2.Models.Register.ApplicationUser", b =>
                 {
                     b.Property<string>("Id")
                         .HasColumnType("nvarchar(450)");
@@ -117,133 +352,6 @@ namespace CrmApiV2.Migrations
                     b.ToTable("AspNetUsers", (string)null);
                 });
 
-            modelBuilder.Entity("CrmApiV2.Models.Company", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<string>("Address")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("CreatedBy")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<DateTime>("CreatedOn")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("Email")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<bool>("IsDeleted")
-                        .HasColumnType("bit");
-
-                    b.Property<string>("ModifiedBy")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<DateTime?>("ModifiedOn")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("Name")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("PhoneNumber")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.HasKey("Id");
-
-                    b.ToTable("Companies");
-                });
-
-            modelBuilder.Entity("CrmApiV2.Models.DailyUserSummary", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<string>("ApplicationUserId")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(450)");
-
-                    b.Property<DateTime>("Date")
-                        .HasColumnType("datetime2");
-
-                    b.Property<TimeSpan>("TotalBreakTime")
-                        .HasColumnType("time");
-
-                    b.Property<TimeSpan>("TotalWorkingTime")
-                        .HasColumnType("time");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("ApplicationUserId");
-
-                    b.ToTable("DailyUserSummaries");
-                });
-
-            modelBuilder.Entity("CrmApiV2.Models.Project", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<string>("ClientName")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<int>("CompanyId")
-                        .HasColumnType("int");
-
-                    b.Property<string>("CreatedBy")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<DateTime>("CreatedOn")
-                        .HasColumnType("datetime2");
-
-                    b.Property<bool>("IsComplete")
-                        .HasColumnType("bit");
-
-                    b.Property<bool>("IsDeleted")
-                        .HasColumnType("bit");
-
-                    b.Property<string>("ModifiedBy")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<DateTime?>("ModifiedOn")
-                        .HasColumnType("datetime2");
-
-                    b.Property<double>("MonthlyPrice")
-                        .HasColumnType("float");
-
-                    b.Property<string>("ProjectName")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<DateTime>("StartDate")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("WebsiteUrl")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("CompanyId");
-
-                    b.ToTable("Projects");
-                });
-
             modelBuilder.Entity("CrmApiV2.Models.UserProject", b =>
                 {
                     b.Property<int>("Id")
@@ -305,6 +413,11 @@ namespace CrmApiV2.Migrations
                         .IsConcurrencyToken()
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<string>("Discriminator")
+                        .IsRequired()
+                        .HasMaxLength(21)
+                        .HasColumnType("nvarchar(21)");
+
                     b.Property<string>("Name")
                         .HasMaxLength(256)
                         .HasColumnType("nvarchar(256)");
@@ -322,49 +435,9 @@ namespace CrmApiV2.Migrations
 
                     b.ToTable("AspNetRoles", (string)null);
 
-                    b.HasData(
-                        new
-                        {
-                            Id = "c63d32a7-47e0-4b4a-af98-d4c72223a7fd",
-                            Name = "Super Admin",
-                            NormalizedName = "SUPER_ADMIN"
-                        },
-                        new
-                        {
-                            Id = "982a79c9-54a1-4cf4-a31a-7b0ed4ccb3ce",
-                            Name = "Admin",
-                            NormalizedName = "ADMIN"
-                        },
-                        new
-                        {
-                            Id = "e9d46f3a-3a1f-4243-aebf-8e7f8a08595d",
-                            Name = "Seo",
-                            NormalizedName = "SEO"
-                        },
-                        new
-                        {
-                            Id = "bca05d19-d084-4d00-9c40-47a46db0df4e",
-                            Name = "Developer",
-                            NormalizedName = "DEVELOPER"
-                        },
-                        new
-                        {
-                            Id = "ebaad9b9-247a-4d23-b866-713d5dfc0b74",
-                            Name = "Sales",
-                            NormalizedName = "SALES"
-                        },
-                        new
-                        {
-                            Id = "eec1a010-8bc8-488f-b451-7ad8bb503178",
-                            Name = "Content Writer",
-                            NormalizedName = "CONTENT_WRITER"
-                        },
-                        new
-                        {
-                            Id = "277d90c7-fb50-474d-9105-efc9de138655",
-                            Name = "Academic Writer",
-                            NormalizedName = "ACADEMIC_WRITER"
-                        });
+                    b.HasDiscriminator().HasValue("IdentityRole");
+
+                    b.UseTphMappingStrategy();
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRoleClaim<string>", b =>
@@ -473,7 +546,74 @@ namespace CrmApiV2.Migrations
                     b.ToTable("AspNetUserTokens", (string)null);
                 });
 
-            modelBuilder.Entity("CrmApiV2.Models.ApplicationUser", b =>
+            modelBuilder.Entity("CrmApiV2.Models.Register.ApplicationRole", b =>
+                {
+                    b.HasBaseType("Microsoft.AspNetCore.Identity.IdentityRole");
+
+                    b.HasDiscriminator().HasValue("ApplicationRole");
+                });
+
+            modelBuilder.Entity("CrmApiV2.Models.DailyUserSummary", b =>
+                {
+                    b.HasOne("CrmApiV2.Models.Register.ApplicationUser", "ApplicationUser")
+                        .WithMany("DailySummaries")
+                        .HasForeignKey("ApplicationUserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("ApplicationUser");
+                });
+
+            modelBuilder.Entity("CrmApiV2.Models.DynamicForm.EmployeeFormData", b =>
+                {
+                    b.HasOne("CrmApiV2.Models.DynamicForm.FormField", "FormField")
+                        .WithMany()
+                        .HasForeignKey("FieldId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("CrmApiV2.Models.Register.ApplicationUser", "User")
+                        .WithMany("EmployeeFormDatas")
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("FormField");
+
+                    b.Navigation("User");
+                });
+
+            modelBuilder.Entity("CrmApiV2.Models.DynamicForm.FormField", b =>
+                {
+                    b.HasOne("CrmApiV2.Models.DynamicForm.FormTemplate", "FormTemplate")
+                        .WithMany("FormFields")
+                        .HasForeignKey("FormTemplateId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("FormTemplate");
+                });
+
+            modelBuilder.Entity("CrmApiV2.Models.DynamicForm.RoleFormTemplate", b =>
+                {
+                    b.HasOne("CrmApiV2.Models.DynamicForm.FormTemplate", "FormTemplate")
+                        .WithMany("RoleFormTemplates")
+                        .HasForeignKey("FormTemplateId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("CrmApiV2.Models.Register.ApplicationRole", "Role")
+                        .WithMany("RoleFormTemplates")
+                        .HasForeignKey("RoleId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("FormTemplate");
+
+                    b.Navigation("Role");
+                });
+
+            modelBuilder.Entity("CrmApiV2.Models.Project", b =>
                 {
                     b.HasOne("CrmApiV2.Models.Company", "Company")
                         .WithMany()
@@ -484,18 +624,7 @@ namespace CrmApiV2.Migrations
                     b.Navigation("Company");
                 });
 
-            modelBuilder.Entity("CrmApiV2.Models.DailyUserSummary", b =>
-                {
-                    b.HasOne("CrmApiV2.Models.ApplicationUser", "ApplicationUser")
-                        .WithMany("DailySummaries")
-                        .HasForeignKey("ApplicationUserId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("ApplicationUser");
-                });
-
-            modelBuilder.Entity("CrmApiV2.Models.Project", b =>
+            modelBuilder.Entity("CrmApiV2.Models.Register.ApplicationUser", b =>
                 {
                     b.HasOne("CrmApiV2.Models.Company", "Company")
                         .WithMany()
@@ -514,7 +643,7 @@ namespace CrmApiV2.Migrations
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
-                    b.HasOne("CrmApiV2.Models.ApplicationUser", "User")
+                    b.HasOne("CrmApiV2.Models.Register.ApplicationUser", "User")
                         .WithMany("UserProjects")
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Restrict)
@@ -527,7 +656,7 @@ namespace CrmApiV2.Migrations
 
             modelBuilder.Entity("CrmApiV2.Models.UserTimeLog", b =>
                 {
-                    b.HasOne("CrmApiV2.Models.ApplicationUser", "ApplicationUser")
+                    b.HasOne("CrmApiV2.Models.Register.ApplicationUser", "ApplicationUser")
                         .WithMany("TimeLogs")
                         .HasForeignKey("ApplicationUserId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -547,7 +676,7 @@ namespace CrmApiV2.Migrations
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityUserClaim<string>", b =>
                 {
-                    b.HasOne("CrmApiV2.Models.ApplicationUser", null)
+                    b.HasOne("CrmApiV2.Models.Register.ApplicationUser", null)
                         .WithMany()
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -556,7 +685,7 @@ namespace CrmApiV2.Migrations
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityUserLogin<string>", b =>
                 {
-                    b.HasOne("CrmApiV2.Models.ApplicationUser", null)
+                    b.HasOne("CrmApiV2.Models.Register.ApplicationUser", null)
                         .WithMany()
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -571,7 +700,7 @@ namespace CrmApiV2.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("CrmApiV2.Models.ApplicationUser", null)
+                    b.HasOne("CrmApiV2.Models.Register.ApplicationUser", null)
                         .WithMany()
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -580,25 +709,39 @@ namespace CrmApiV2.Migrations
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityUserToken<string>", b =>
                 {
-                    b.HasOne("CrmApiV2.Models.ApplicationUser", null)
+                    b.HasOne("CrmApiV2.Models.Register.ApplicationUser", null)
                         .WithMany()
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
                 });
 
-            modelBuilder.Entity("CrmApiV2.Models.ApplicationUser", b =>
+            modelBuilder.Entity("CrmApiV2.Models.DynamicForm.FormTemplate", b =>
+                {
+                    b.Navigation("FormFields");
+
+                    b.Navigation("RoleFormTemplates");
+                });
+
+            modelBuilder.Entity("CrmApiV2.Models.Project", b =>
+                {
+                    b.Navigation("UserProjects");
+                });
+
+            modelBuilder.Entity("CrmApiV2.Models.Register.ApplicationUser", b =>
                 {
                     b.Navigation("DailySummaries");
+
+                    b.Navigation("EmployeeFormDatas");
 
                     b.Navigation("TimeLogs");
 
                     b.Navigation("UserProjects");
                 });
 
-            modelBuilder.Entity("CrmApiV2.Models.Project", b =>
+            modelBuilder.Entity("CrmApiV2.Models.Register.ApplicationRole", b =>
                 {
-                    b.Navigation("UserProjects");
+                    b.Navigation("RoleFormTemplates");
                 });
 #pragma warning restore 612, 618
         }

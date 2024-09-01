@@ -1,4 +1,6 @@
-﻿namespace CrmApiV2.Models
+﻿using CrmApiV2.Models.Register;
+
+namespace CrmApiV2.Models
 {
     public class DailyUserSummary
     {

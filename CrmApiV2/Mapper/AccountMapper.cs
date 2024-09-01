@@ -1,5 +1,5 @@
 ﻿using CrmApiV2.Dtos.Account;
-using CrmApiV2.Models;
+using CrmApiV2.Models.Register;
 using Microsoft.AspNetCore.Http.HttpResults;
 using System.ComponentModel.Design;
 using System.Net;
