@@ -1,5 +1,6 @@
 ﻿using CrmApiV2.Data;
 using CrmApiV2.Dtos.DynamicForm;
+using CrmApiV2.Dtos.Employee;
 using CrmApiV2.Dtos.Response;
 using CrmApiV2.Mapper.DynamicForm;
 using CrmApiV2.Models.DynamicForm;
@@ -169,4 +170,53 @@ public class EmployeeController : ControllerBase
 
         return Ok(response);
     }
+
+    [Authorize]
+    [HttpGet("attendance/{userId}")]
+    public async Task<IActionResult> GetUserAttendance(string userId, DateTime fromDate, DateTime toDate)
+    {
+        if (toDate > DateTime.Now)
+        {
+            return BadRequest(new ApiResponseDto<string>
+            {
+                Status = SD.Failure,
+                Message = "ToDate cannot be in the future."
+            });
+        }
+
+        var user = await _userManager.FindByIdAsync(userId);
+        if (user == null)
+        {
+            return NotFound(new ApiResponseDto<string>
+            {
+                Status = SD.Failure,
+                Message = "User not found."
+            });
+        }
+
+        var attendanceRecords = await _context.DailyUserSummaries
+            .Where(d => d.ApplicationUserId == userId && d.Date >= fromDate && d.Date <= toDate)
+            .ToListAsync();
+
+        var dateRange = Enumerable.Range(0, (toDate - fromDate).Days + 1)
+            .Select(offset => fromDate.AddDays(offset))
+            .ToList();
+
+        var attendanceResponse = dateRange.Select(date => new AttendanceDto
+        {
+            Date = date,
+            Status = attendanceRecords.Any(record => record.Date.Date == date.Date) ? "Present" : "Absent"
+        }).ToList();
+
+        var response = new ApiResponseDto<List<AttendanceDto>>
+        {
+            Status = SD.Success,
+            Message = "Attendance data retrieved successfully",
+            Data = attendanceResponse
+        };
+
+        return Ok(response);
+    }
+
+
 }
