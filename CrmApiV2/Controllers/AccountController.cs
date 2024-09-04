@@ -340,7 +340,16 @@ namespace CrmApiV2.Controllers
 
             timeLog.LogoutTime = DateTime.UtcNow;
 
-            // Calculate break time if there was a previous session
+            // Calculate working time in total seconds
+            TimeSpan workingTime = timeLog.LogoutTime.Value - timeLog.LoginTime;
+
+            // Cap working time to 24 hours to avoid SqlDbType.Time overflow
+            if (workingTime.TotalHours > 24)
+            {
+                workingTime = TimeSpan.FromHours(24);
+            }
+
+            // Calculate break time
             var previousLog = await _db.UserTimeLogs
                 .Where(tl => tl.ApplicationUserId == userId && tl.LogoutTime != null)
                 .OrderByDescending(tl => tl.LogoutTime)
@@ -348,17 +357,18 @@ namespace CrmApiV2.Controllers
 
             TimeSpan breakTime = TimeSpan.Zero;
 
-
             if (previousLog != null)
             {
                 breakTime = timeLog.LoginTime - previousLog.LogoutTime ?? TimeSpan.Zero;
-                timeLog.BreakTime = breakTime;
+
+                // Cap break time to 24 hours to avoid SqlDbType.Time overflow
+                if (breakTime.TotalHours > 24)
+                {
+                    breakTime = TimeSpan.FromHours(24);
+                }
             }
 
-            // Calculate working time
-            TimeSpan workingTime = timeLog.LogoutTime.Value - timeLog.LoginTime;
-
-            // Update daily summary
+            // Update or create daily summary
             var summary = await _db.DailyUserSummaries
                 .Where(s => s.ApplicationUserId == userId && s.Date == DateTime.UtcNow.Date)
                 .FirstOrDefaultAsync();
@@ -369,15 +379,15 @@ namespace CrmApiV2.Controllers
                 {
                     ApplicationUserId = userId,
                     Date = DateTime.UtcNow.Date,
-                    TotalWorkingTime = workingTime,
-                    TotalBreakTime = breakTime
+                    TotalWorkingTimeInSeconds = (int)workingTime.TotalSeconds,  // Store as seconds
+                    TotalBreakTimeInSeconds = (int)breakTime.TotalSeconds       // Store as seconds
                 };
                 _db.DailyUserSummaries.Add(summary);
             }
             else
             {
-                summary.TotalWorkingTime += workingTime;
-                summary.TotalBreakTime += breakTime;
+                summary.TotalWorkingTimeInSeconds += (int)workingTime.TotalSeconds;
+                summary.TotalBreakTimeInSeconds += (int)breakTime.TotalSeconds;
                 _db.DailyUserSummaries.Update(summary);
             }
 
@@ -501,28 +511,85 @@ namespace CrmApiV2.Controllers
             });
         }
 
-        [HttpGet("userWorkingStatus/{userId}")]
+        [HttpGet("userWorkingStatus")]
         [Authorize]
-        public async Task<ActionResult> UserWorkingStatus([FromRoute] string userId)
+        public async Task<ActionResult> UserWorkingStatus([FromQuery] string userId, [FromQuery] DateTime fromDate, [FromQuery] DateTime toDate)
         {
-            var workingStatusList = await _db.DailyUserSummaries.Where(u => u.ApplicationUserId == userId).ToListAsync();
-
-            if (!workingStatusList.Any())
+            if (toDate > DateTime.UtcNow.Date)
             {
-                return NotFound(new ErrorResponseDto
+                return BadRequest(new ErrorResponseDto
                 {
                     Status = "error",
-                    Message = $"No Record Found.",
+                    Message = "To date cannot be greater than today."
                 });
             }
 
-            return Ok(new ApiResponseDto<List<DailyUserSummary>>
+            // List to store the final result
+            var userWorkingStatusList = new List<UserWorkingStatusDto>();
+
+            // Loop through each day between fromDate and toDate
+            for (var date = fromDate.Date; date <= toDate.Date; date = date.AddDays(1))
+            {
+                // Fetch the summary for the specific date
+                var summary = await _db.DailyUserSummaries
+                    .Where(u => u.ApplicationUserId == userId && u.Date == date)
+                    .FirstOrDefaultAsync();
+
+                if (summary != null)
+                {
+                    // Fetch the first login and last login of the day
+                    var timeLogs = await _db.UserTimeLogs
+                        .Where(tl => tl.ApplicationUserId == userId && tl.LoginTime.Date == date)
+                        .OrderBy(tl => tl.LoginTime)
+                        .ToListAsync();
+
+                    if (timeLogs.Any())
+                    {
+                        var firstLogin = timeLogs.First().LoginTime;
+                        var lastLogin = timeLogs.Last().LogoutTime ?? DateTime.UtcNow;
+
+                        var totalBreakTime = TimeSpan.FromSeconds(summary.TotalBreakTimeInSeconds);
+                        var totalWorkingTime = TimeSpan.FromSeconds(summary.TotalWorkingTimeInSeconds);
+
+                        userWorkingStatusList.Add(new UserWorkingStatusDto
+                        {
+                            Date = date,
+                            FirstLogin = firstLogin,
+                            LastLogin = lastLogin,
+                            TotalBreakTime = totalBreakTime,
+                            TotalWorkingTime = totalWorkingTime,
+                            Status = "Present"
+                        });
+                    }
+                    else
+                    {
+                        // If no time logs but a summary exists, mark as absent
+                        userWorkingStatusList.Add(new UserWorkingStatusDto
+                        {
+                            Date = date,
+                            Status = "Absent"
+                        });
+                    }
+                }
+                else
+                {
+                    // If no summary exists, mark as absent
+                    userWorkingStatusList.Add(new UserWorkingStatusDto
+                    {
+                        Date = date,
+                        Status = "Absent"
+                    });
+                }
+            }
+
+            return Ok(new ApiResponseDto<List<UserWorkingStatusDto>>
             {
                 Status = "success",
-                Message = "Users retrieved successfully",
-                Data = workingStatusList
+                Message = "User working status retrieved successfully.",
+                Data = userWorkingStatusList
             });
         }
+
 
         [HttpPost("startBreakTime/{userId}")]
         [Authorize]
@@ -546,17 +613,17 @@ namespace CrmApiV2.Controllers
                 .OrderByDescending(tl => tl.LogoutTime)
                 .FirstOrDefaultAsync();
 
-            TimeSpan breakTime = TimeSpan.Zero;
-
+            long breakTimeInSeconds = 0;
 
             if (previousLog != null)
             {
-                breakTime = timeLog.LoginTime - previousLog.LogoutTime ?? TimeSpan.Zero;
-                timeLog.BreakTime = breakTime;
+                TimeSpan breakTime = timeLog.LoginTime - previousLog.LogoutTime ?? TimeSpan.Zero;
+                breakTimeInSeconds = (long)breakTime.TotalSeconds;
+                timeLog.BreakTime = breakTime; // This can be left as is if TimeSpan is needed here
             }
 
-            // Calculate working time
             TimeSpan workingTime = timeLog.LogoutTime.Value - timeLog.LoginTime;
+            long workingTimeInSeconds = (long)workingTime.TotalSeconds;
 
             // Update daily summary
             var summary = await _db.DailyUserSummaries
@@ -569,15 +636,15 @@ namespace CrmApiV2.Controllers
                 {
                     ApplicationUserId = userId,
                     Date = DateTime.UtcNow.Date,
-                    TotalWorkingTime = workingTime,
-                    TotalBreakTime = breakTime
+                    TotalWorkingTimeInSeconds = workingTimeInSeconds,
+                    TotalBreakTimeInSeconds = breakTimeInSeconds
                 };
                 _db.DailyUserSummaries.Add(summary);
             }
             else
             {
-                summary.TotalWorkingTime += workingTime;
-                summary.TotalBreakTime += breakTime;
+                summary.TotalWorkingTimeInSeconds += workingTimeInSeconds;
+                summary.TotalBreakTimeInSeconds += breakTimeInSeconds;
                 _db.DailyUserSummaries.Update(summary);
             }
 
@@ -587,8 +654,7 @@ namespace CrmApiV2.Controllers
             {
                 Status = SD.Success,
                 Message = "Breaktime Start"
-            }
-                  );
+            });
         }
 
         [HttpPost("endBreakTime/{userId}")]

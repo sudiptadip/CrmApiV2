@@ -7,9 +7,13 @@ namespace CrmApiV2.Models
         public int Id { get; set; }
         public string ApplicationUserId { get; set; }
         public DateTime Date { get; set; }
-        public TimeSpan TotalWorkingTime { get; set; }
-        public TimeSpan TotalBreakTime { get; set; }
+
+        public long TotalWorkingTimeInSeconds { get; set; }
+        public long TotalBreakTimeInSeconds { get; set; }
 
         public ApplicationUser ApplicationUser { get; set; }
+
+        public TimeSpan TotalWorkingTime => TimeSpan.FromSeconds(TotalWorkingTimeInSeconds);
+        public TimeSpan TotalBreakTime => TimeSpan.FromSeconds(TotalBreakTimeInSeconds);
     }
 }
