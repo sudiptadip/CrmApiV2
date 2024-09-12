@@ -25,12 +25,12 @@ namespace CrmApiV2.Data
         public DbSet<FormField> FormFields { get; set; }
         public DbSet<RoleFormTemplate> RoleFormTemplates { get; set; }
         public DbSet<EmployeeFormData> EmployeeFormDatas { get; set; }
+        public DbSet<Otp> Otps { get; set; }
 
         protected override void OnModelCreating(ModelBuilder builder)
         {
             base.OnModelCreating(builder);
 
-            // Relationships and keys
             builder.Entity<UserProject>()
                 .HasOne(up => up.User)
                 .WithMany(u => u.UserProjects)
@@ -53,7 +53,6 @@ namespace CrmApiV2.Data
                 .WithOne(d => d.ApplicationUser)
                 .HasForeignKey(d => d.ApplicationUserId);
 
-            // Configuring composite keys and relationships
             builder.Entity<RoleFormTemplate>()
                 .HasKey(rft => new { rft.RoleId, rft.FormTemplateId });
 
@@ -76,6 +75,10 @@ namespace CrmApiV2.Data
                 .HasOne(efd => efd.FormField)
                 .WithMany()
                 .HasForeignKey(efd => efd.FieldId);
+
+            builder.Entity<Otp>()
+            .HasIndex(o => o.UserId)
+            .IsUnique(false);
         }
 
     }

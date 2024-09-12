@@ -678,5 +678,143 @@ namespace CrmApiV2.Controllers
                  );
         }
 
+
+        [HttpPost("forgot-password")]
+        public async Task<IActionResult> ForgotPassword([FromBody] ForgotPasswordDto forgotPasswordDto)
+        {
+            if (!ModelState.IsValid)
+            {
+                return BadRequest(new ErrorResponseDto
+                {
+                    Status = "error",
+                    Message = "Invalid email address."
+                });
+            }
+
+            var user = await _userManager.FindByEmailAsync(forgotPasswordDto.Email);
+            if (user == null)
+            {
+                return BadRequest(new ErrorResponseDto
+                {
+                    Status = "error",
+                    Message = "Email not found."
+                });
+            }
+
+            // Generate OTP
+            var otpCode = new Random().Next(100000, 999999).ToString();
+
+            // Save OTP in the database
+            var otp = new Otp
+            {
+                UserId = user.Id,
+                Code = otpCode,
+                ExpiryTime = DateTime.UtcNow.AddMinutes(10), // OTP valid for 10 minutes
+                IsUsed = false
+            };
+
+            _db.Otps.Add(otp);
+            await _db.SaveChangesAsync();
+
+            // Send OTP to email
+            var emailDto = new EmailDto
+            {
+                To = user.Email,
+                Subject = "Password Reset OTP",
+                Body = $"Your OTP for resetting your password is: {otpCode}. It is valid for 10 minutes."
+            };
+            _emailService.SendEmail(emailDto);
+
+            return Ok(new ApiResponseDto<string>
+            {
+                Status = "success",
+                Message = "OTP sent to your email address."
+            });
+        }
+
+        [HttpPost("verify-otp")]
+        public async Task<IActionResult> VerifyOtp([FromBody] VerifyOtpDto verifyOtpDto)
+        {
+            var user = await _userManager.FindByEmailAsync(verifyOtpDto.Email);
+            if (user == null)
+            {
+                return BadRequest(new ErrorResponseDto
+                {
+                    Status = "error",
+                    Message = "Invalid email address."
+                });
+            }
+
+            // Fetch OTP from the database
+            var otp = await _db.Otps
+                .Where(o => o.UserId == user.Id && o.Code == verifyOtpDto.Otp && !o.IsUsed && o.ExpiryTime >= DateTime.UtcNow)
+                .FirstOrDefaultAsync();
+
+            if (otp == null)
+            {
+                return BadRequest(new ErrorResponseDto
+                {
+                    Status = "error",
+                    Message = "Invalid OTP or OTP expired."
+                });
+            }
+
+            return Ok(new ApiResponseDto<string>
+            {
+                Status = "success",
+                Message = "OTP verified successfully."
+            });
+        }
+
+        [HttpPost("reset-password")]
+        public async Task<IActionResult> ResetPassword([FromBody] ResetPasswordDto resetPasswordDto)
+        {
+            var user = await _userManager.FindByEmailAsync(resetPasswordDto.Email);
+            if (user == null)
+            {
+                return BadRequest(new ErrorResponseDto
+                {
+                    Status = "error",
+                    Message = "Invalid email address."
+                });
+            }
+
+            // Fetch OTP from the database
+            var otp = await _db.Otps
+                .Where(o => o.UserId == user.Id && o.Code == resetPasswordDto.Otp && !o.IsUsed && o.ExpiryTime >= DateTime.UtcNow)
+                .FirstOrDefaultAsync();
+
+            if (otp == null)
+            {
+                return BadRequest(new ErrorResponseDto
+                {
+                    Status = "error",
+                    Message = "Invalid OTP or OTP expired."
+                });
+            }
+
+            // Reset the password
+            var resetResult = await _userManager.ResetPasswordAsync(user, await _userManager.GeneratePasswordResetTokenAsync(user), resetPasswordDto.NewPassword);
+            if (!resetResult.Succeeded)
+            {
+                return BadRequest(new ErrorResponseDto
+                {
+                    Status = "error",
+                    Message = "Failed to reset password."
+                });
+            }
+
+            // Mark OTP as used
+            otp.IsUsed = true;
+            _db.Otps.Update(otp);
+            await _db.SaveChangesAsync();
+
+            return Ok(new ApiResponseDto<string>
+            {
+                Status = "success",
+                Message = "Password reset successfully."
+            });
+        }
+
     }
 }
